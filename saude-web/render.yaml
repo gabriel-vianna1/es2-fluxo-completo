@@ -1,0 +1,63 @@
+# Render Blueprint - saude-web
+# Banco de dados, backend e frontend do sistema de saúde.
+databases:
+  - name: saude-db
+    databaseName: saude_db
+    user: saude
+    plan: free
+    region: oregon
+
+services:
+  # ===== Backend: Spring Boot (Docker) =====
+  - type: web
+    name: saude-backend
+    runtime: docker
+    repo: https://github.com/gabriel-vianna1/es2-fluxo-completo
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /api/profissionais
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: saude-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: saude-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: saude-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: saude-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: saude-db
+          property: password
+
+  # ===== Frontend: React (Static Site) =====
+  - type: web
+    name: saude-frontend
+    runtime: static
+    repo: https://github.com/gabriel-vianna1/es2-fluxo-completo
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: saude-backend
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
